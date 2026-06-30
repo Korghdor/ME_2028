@@ -6,7 +6,7 @@ create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.me2028_players (
   id uuid primary key default gen_random_uuid(),
-  login text unique,
+  login text,
   name text not null unique,
   pin_hash text not null,
   is_master boolean not null default false,
@@ -20,6 +20,53 @@ alter table public.me2028_players
 create unique index if not exists me2028_players_login_unique
   on public.me2028_players (lower(login))
   where login is not null;
+
+create or replace function public.me2028_upsert_player(
+  p_login text,
+  p_name text,
+  p_pin text,
+  p_is_master boolean default false
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_player_id uuid;
+begin
+  if nullif(trim(p_login), '') is null then
+    raise exception 'Login zawodnika jest wymagany.' using errcode = '22023';
+  end if;
+
+  select id
+    into v_player_id
+  from public.me2028_players
+  where lower(login) = lower(trim(p_login));
+
+  if v_player_id is null then
+    insert into public.me2028_players (login, name, pin_hash, is_master, active)
+    values (
+      lower(trim(p_login)),
+      p_name,
+      extensions.crypt(p_pin, extensions.gen_salt('bf')),
+      p_is_master,
+      true
+    )
+    returning id into v_player_id;
+  else
+    update public.me2028_players
+    set
+      name = p_name,
+      pin_hash = extensions.crypt(p_pin, extensions.gen_salt('bf')),
+      is_master = p_is_master,
+      active = true
+    where id = v_player_id;
+  end if;
+
+  return v_player_id;
+end;
+$$;
 
 create table if not exists public.me2028_matches (
   id uuid primary key default gen_random_uuid(),
@@ -64,22 +111,41 @@ revoke all on table public.me2028_matches from anon, authenticated;
 revoke all on table public.me2028_predictions from anon, authenticated;
 revoke all on table public.me2028_sessions from anon, authenticated;
 
-delete from public.me2028_players
-where login in ('maciej', 'tomasz')
-  or name like 'Maciej Zaj%'
-  or name like 'Tomasz Broc%';
+update public.me2028_players
+set login = 'maciej'
+where login is null
+  and name like 'Maciej Zaj%';
 
-insert into public.me2028_players (login, name, pin_hash, is_master)
-values
-  ('maciej', 'Maciej Zając', extensions.crypt('8500', extensions.gen_salt('bf')), true),
-  ('tomasz', 'Tomasz Brocławik', extensions.crypt('1257', extensions.gen_salt('bf')), false);
+update public.me2028_players
+set login = 'tomasz'
+where login is null
+  and name like 'Tomasz Broc%';
+
+update public.me2028_players
+set login = 'edward'
+where login is null
+  and name like 'Edward Bac%';
+
+select public.me2028_upsert_player('maciej', 'Maciej Zając', '8500', true);
+select public.me2028_upsert_player('tomasz', 'Tomasz Brocławik', '1257', false);
+select public.me2028_upsert_player('edward', 'Edward Baciak', '0012', false);
 
 insert into public.me2028_matches (number, home_team, away_team, kickoff_at)
 values
   (1, 'Polska', 'Szkocja', now() + interval '8 minutes'),
   (2, 'Hiszpania', 'Dania', now() + interval '35 minutes'),
   (3, 'Włochy', 'Holandia', now() + interval '3 hours'),
-  (4, 'Portugalia', 'Czechy', now() + interval '1 day')
+  (4, 'Portugalia', 'Czechy', now() + interval '1 day'),
+  (5, 'Francja', 'Szwecja', date_trunc('day', now()) + interval '1 day 18 hours'),
+  (6, 'Niemcy', 'Norwegia', date_trunc('day', now()) + interval '1 day 21 hours'),
+  (7, 'Anglia', 'Austria', date_trunc('day', now()) + interval '2 days 18 hours'),
+  (8, 'Belgia', 'Serbia', date_trunc('day', now()) + interval '2 days 21 hours'),
+  (9, 'Chorwacja', 'Szwajcaria', date_trunc('day', now()) + interval '3 days 18 hours'),
+  (10, 'Dania', 'Turcja', date_trunc('day', now()) + interval '3 days 21 hours'),
+  (11, 'Ukraina', 'Rumunia', date_trunc('day', now()) + interval '4 days 18 hours'),
+  (12, 'Czechy', 'Walia', date_trunc('day', now()) + interval '4 days 21 hours'),
+  (13, 'Szkocja', 'Grecja', date_trunc('day', now()) + interval '5 days 18 hours'),
+  (14, 'Irlandia', 'Słowenia', date_trunc('day', now()) + interval '5 days 21 hours')
 on conflict (number) do update
 set
   home_team = excluded.home_team,
@@ -477,13 +543,24 @@ begin
       when 1 then now() + interval '8 minutes'
       when 2 then now() + interval '35 minutes'
       when 3 then now() + interval '3 hours'
-      else now() + interval '1 day'
+      when 4 then now() + interval '1 day'
+      when 5 then date_trunc('day', now()) + interval '1 day 18 hours'
+      when 6 then date_trunc('day', now()) + interval '1 day 21 hours'
+      when 7 then date_trunc('day', now()) + interval '2 days 18 hours'
+      when 8 then date_trunc('day', now()) + interval '2 days 21 hours'
+      when 9 then date_trunc('day', now()) + interval '3 days 18 hours'
+      when 10 then date_trunc('day', now()) + interval '3 days 21 hours'
+      when 11 then date_trunc('day', now()) + interval '4 days 18 hours'
+      when 12 then date_trunc('day', now()) + interval '4 days 21 hours'
+      when 13 then date_trunc('day', now()) + interval '5 days 18 hours'
+      when 14 then date_trunc('day', now()) + interval '5 days 21 hours'
+      else kickoff_at
     end,
     result_home = null,
     result_away = null,
     completed = false,
     result_updated_at = null
-  where number in (1, 2, 3, 4);
+  where number between 1 and 14;
 
   return public.me2028_bootstrap_json(v_player);
 end;

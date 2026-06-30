@@ -34,12 +34,25 @@ Nie wklejaj do strony `service_role key`. Ten klucz jest tajny.
 
 - Maciej Zając, login `maciej`, PIN `8500`, rola `master`
 - Tomasz Brocławik, login `tomasz`, PIN `1257`, rola `zawodnik`
+- Edward Baciak, login `edward`, PIN `0012`, rola `zawodnik`
 
 PIN-y są haszowane w bazie przez `pgcrypto`, więc nie są zapisane w plikach strony.
+
+Nowych zawodników można dodawać w dowolnym momencie przez dopisanie kolejnej
+linijki w `supabase-schema.sql`, np.:
+
+```sql
+select public.me2028_upsert_player('jan', 'Jan Kowalski', '4321', false);
+```
+
+Funkcja `me2028_upsert_player` nie usuwa istniejącego zawodnika, więc jego
+wcześniejsze typy nie przepadają. Aktualizuje tylko nazwę, PIN, rolę i status
+aktywności dla danego loginu.
 
 ## 4. Co działa
 
 - Logowanie przez PIN.
+- 14 meczów testowych, w tym 10 dodatkowych meczów rozłożonych po 2 dziennie.
 - Typowanie wyników meczów.
 - Serwerowa blokada zapisu typu, gdy do meczu zostało mniej niż 10 minut.
 - Publiczny podgląd typów wszystkich zawodników bez logowania.

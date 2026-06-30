@@ -3,6 +3,7 @@
 const LOGIN_PLAYERS = [
   { login: "maciej", name: "Maciej Zając" },
   { login: "tomasz", name: "Tomasz Brocławik" },
+  { login: "edward", name: "Edward Baciak" },
 ];
 
 const SESSION_KEY = "balticwood-me-2028-supabase-session-v1";
