@@ -2,16 +2,24 @@
 -- Uruchom ten plik w Supabase: SQL Editor -> New query -> Run.
 -- Skrypt tworzy tylko obiekty z prefiksem me2028_.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.me2028_players (
   id uuid primary key default gen_random_uuid(),
+  login text unique,
   name text not null unique,
   pin_hash text not null,
   is_master boolean not null default false,
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.me2028_players
+  add column if not exists login text;
+
+create unique index if not exists me2028_players_login_unique
+  on public.me2028_players (lower(login))
+  where login is not null;
 
 create table if not exists public.me2028_matches (
   id uuid primary key default gen_random_uuid(),
@@ -56,15 +64,15 @@ revoke all on table public.me2028_matches from anon, authenticated;
 revoke all on table public.me2028_predictions from anon, authenticated;
 revoke all on table public.me2028_sessions from anon, authenticated;
 
-insert into public.me2028_players (name, pin_hash, is_master)
+delete from public.me2028_players
+where login in ('maciej', 'tomasz')
+  or name like 'Maciej Zaj%'
+  or name like 'Tomasz Broc%';
+
+insert into public.me2028_players (login, name, pin_hash, is_master)
 values
-  ('Maciej Zając', crypt('8500', gen_salt('bf')), true),
-  ('Tomasz Brocławik', crypt('1257', gen_salt('bf')), false)
-on conflict (name) do update
-set
-  pin_hash = excluded.pin_hash,
-  is_master = excluded.is_master,
-  active = true;
+  ('maciej', 'Maciej Zając', extensions.crypt('8500', extensions.gen_salt('bf')), true),
+  ('tomasz', 'Tomasz Brocławik', extensions.crypt('1257', extensions.gen_salt('bf')), false);
 
 insert into public.me2028_matches (number, home_team, away_team, kickoff_at)
 values
@@ -246,10 +254,14 @@ begin
   select *
     into v_player
   from public.me2028_players
-  where lower(name) = lower(trim(p_player_name))
-    and active = true;
+  where (
+      lower(login) = lower(trim(p_player_name))
+      or lower(name) = lower(trim(p_player_name))
+    )
+    and active = true
+    and pin_hash = extensions.crypt(p_pin, pin_hash);
 
-  if not found or crypt(p_pin, v_player.pin_hash) <> v_player.pin_hash then
+  if v_player.id is null then
     raise exception 'Nieprawidłowy zawodnik albo PIN.' using errcode = '28000';
   end if;
 
@@ -392,7 +404,8 @@ begin
     raise exception 'Brak uprawnień master.' using errcode = '42501';
   end if;
 
-  delete from public.me2028_predictions;
+  delete from public.me2028_predictions
+  where true;
 
   update public.me2028_matches
   set
@@ -405,7 +418,8 @@ begin
     result_home = null,
     result_away = null,
     completed = false,
-    result_updated_at = null;
+    result_updated_at = null
+  where number in (1, 2, 3, 4);
 
   return public.me2028_bootstrap_json(v_player);
 end;

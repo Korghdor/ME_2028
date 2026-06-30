@@ -1,0 +1,4 @@
+project_id = "poztffgnnrcedjkekdky"
+
+[functions.me2028-handler]
+verify_jwt = false

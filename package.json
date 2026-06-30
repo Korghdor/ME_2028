@@ -1,0 +1,11 @@
+{
+  "name": "balticwood-me-2028",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check app.js && node --check server/me2028-handler.js"
+  },
+  "dependencies": {
+    "@supabase/server": "*"
+  }
+}

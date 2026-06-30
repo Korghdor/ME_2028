@@ -1,8 +1,8 @@
 "use strict";
 
 const LOGIN_PLAYERS = [
-  "Maciej Zając",
-  "Tomasz Brocławik",
+  { login: "maciej", name: "Maciej Zając" },
+  { login: "tomasz", name: "Tomasz Brocławik" },
 ];
 
 const SESSION_KEY = "balticwood-me-2028-supabase-session-v1";
@@ -93,7 +93,7 @@ function bindEvents() {
 
 function renderLoginOptions() {
   elements.loginUser.innerHTML = LOGIN_PLAYERS.map(
-    (name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`,
+    (player) => `<option value="${escapeHtml(player.login)}">${escapeHtml(player.name)}</option>`,
   ).join("");
 }
 

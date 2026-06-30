@@ -24,26 +24,16 @@ Skrypt tworzy:
 - ranking liczony po stronie bazy,
 - blokadę typowania 10 minut przed startem meczu.
 
-## 2. Wklejenie publicznego klucza
+## 2. Konfiguracja publicznego klucza
 
-1. W Supabase wejdź w `Project Settings`.
-2. Otwórz `API`.
-3. Adres API jest już wpisany w `supabase-config.js`.
-4. Skopiuj `anon public key`.
-5. W pliku `supabase-config.js` podmień:
-
-```js
-anonKey: "WSTAW_TUTAJ_ANON_PUBLIC_KEY",
-```
-
-na skopiowany klucz.
+Adres API i `anon public key` są już wpisane w `supabase-config.js`.
 
 Nie wklejaj do strony `service_role key`. Ten klucz jest tajny.
 
 ## 3. Konta testowe
 
-- Maciej Zając, PIN `8500`, rola `master`
-- Tomasz Brocławik, PIN `1257`, rola `zawodnik`
+- Maciej Zając, login `maciej`, PIN `8500`, rola `master`
+- Tomasz Brocławik, login `tomasz`, PIN `1257`, rola `zawodnik`
 
 PIN-y są haszowane w bazie przez `pgcrypto`, więc nie są zapisane w plikach strony.
 
