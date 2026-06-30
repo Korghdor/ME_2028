@@ -237,6 +237,7 @@ async function handleSavePrediction(matchId) {
   const awayInput = document.querySelector(`[data-prediction-away="${matchId}"]`);
   const homeValue = homeInput?.value.trim() ?? "";
   const awayValue = awayInput?.value.trim() ?? "";
+  const hadPrediction = Boolean(state.predictions[matchId]?.savedAt);
 
   if (!isValidScore(homeValue) || !isValidScore(awayValue)) {
     setSaveStatus(statusElement, "Wpisz dwie liczby, np. 2 i 1.", "error");
@@ -263,7 +264,13 @@ async function handleSavePrediction(matchId) {
   render();
 
   const nextStatusElement = document.querySelector(`[data-save-status="${matchId}"]`);
-  setSaveStatus(nextStatusElement, "Typ zapisany w bazie. Piłkarska intuicja poszła w świat.", "success");
+  setSaveStatus(
+    nextStatusElement,
+    hadPrediction
+      ? "Typ zaktualizowany. Jeszcze można mieszać w taktyce."
+      : "Typ zapisany w bazie. Piłkarska intuicja poszła w świat.",
+    "success",
+  );
   await loadPublicPredictions();
 }
 
@@ -398,7 +405,7 @@ function renderMatches() {
           </div>
           <div class="match-actions">
             <button class="button button-primary" data-save-match="${match.id}" type="button">
-              Zapisz typ
+              ${prediction.savedAt ? "Zmień typ" : "Zapisz typ"}
             </button>
             <p class="save-status" data-save-status="${match.id}">
               ${prediction.savedAt ? `Zapisano: ${formatDateTime(prediction.savedAt)}` : ""}
