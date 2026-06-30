@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Prototyp strony BalticWood ME 2028 z logowaniem, typowaniem meczów i panelem mastera."
+    />
+    <title>BalticWood ME 2028 - prototyp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero" id="start">
+      <nav class="nav shell" aria-label="Główna nawigacja">
+        <a class="brand" href="#start" aria-label="BalticWood ME 2028">
+          <span class="brand-mark" aria-hidden="true">BW</span>
+          <span>
+            <strong>BalticWood</strong>
+            <small>ME 2028</small>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a class="nav-link" href="#typy">Typy</a>
+          <a class="nav-link" href="#ranking">Ranking</a>
+          <a class="nav-link nav-link-master" href="#master">Master</a>
+        </div>
+      </nav>
+
+      <div class="hero-content shell">
+        <div class="hero-copy">
+          <p class="eyebrow">Prototyp nowej zabawy</p>
+          <h1>ME 2028 z logowaniem i typami online.</h1>
+          <p class="hero-lead">
+            Każdy zawodnik loguje się swoim PIN-em, wpisuje typy do 10 minut
+            przed meczem, a użytkownik master po zakończeniu spotkań wpisuje
+            wyniki i przelicza punktację. Na razie to wersja testowa działająca
+            lokalnie w przeglądarce.
+          </p>
+          <div class="hero-stats" aria-label="Założenia prototypu">
+            <div>
+              <strong>4</strong>
+              <span>mecze testowe</span>
+            </div>
+            <div>
+              <strong>2</strong>
+              <span>zawodników</span>
+            </div>
+            <div>
+              <strong>10 min</strong>
+              <span>blokada przed startem</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="login-card" aria-labelledby="login-title">
+          <p class="eyebrow">Logowanie testowe</p>
+          <h2 id="login-title">Wejdź do typowania</h2>
+          <form id="login-form" class="login-form">
+            <label>
+              Zawodnik
+              <select id="login-user" required></select>
+            </label>
+            <label>
+              PIN
+              <input
+                id="login-password"
+                type="password"
+                inputmode="numeric"
+                autocomplete="current-password"
+                placeholder="Wpisz PIN"
+                required
+              />
+            </label>
+            <button class="button button-primary" type="submit">Zaloguj</button>
+            <p class="form-error" id="login-error" role="alert"></p>
+          </form>
+          <div class="demo-note">
+            <strong>Uwaga:</strong> typy i wyniki będą zapisywane w Supabase po
+            wykonaniu skryptu SQL i wklejeniu klucza anon public w konfiguracji.
+          </div>
+        </section>
+      </div>
+    </header>
+
+    <main class="shell app-shell" id="app" hidden>
+      <section class="user-bar">
+        <div>
+          <p class="eyebrow">Panel zawodnika</p>
+          <h2>Witaj, <span id="current-user-name"></span></h2>
+          <p id="current-user-role"></p>
+        </div>
+        <button class="button button-ghost-dark" id="logout-button" type="button">
+          Wyloguj
+        </button>
+      </section>
+
+      <section class="section warning-card">
+        <strong>To jest prototyp z backendem Supabase.</strong>
+        GitHub Pages hostuje pliki strony, a Supabase przechowuje zawodników,
+        typy, wyniki i ranking. Blokada typowania 10 minut przed meczem jest
+        sprawdzana w bazie, więc nie zależy tylko od zegara użytkownika.
+      </section>
+
+      <section class="section" id="typy">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Typowanie</p>
+            <h2>Twoje typy meczów</h2>
+          </div>
+          <p>
+            Typ możesz zapisać tylko wtedy, gdy do rozpoczęcia meczu zostało
+            więcej niż 10 minut.
+          </p>
+        </div>
+        <div class="matches-grid" id="matches-list"></div>
+      </section>
+
+      <section class="section" id="ranking">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Klasyfikacja</p>
+            <h2>Aktualna punktacja</h2>
+          </div>
+          <p id="last-calculated">Punktacja nie była jeszcze przeliczona.</p>
+        </div>
+        <div class="ranking-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Miejsce</th>
+                <th>Zawodnik</th>
+                <th>Punkty</th>
+                <th>Dokładne</th>
+                <th>Zwycięzca/remis</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section master-panel" id="master" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Uprawnienia master</p>
+            <h2>Wyniki i przeliczanie</h2>
+          </div>
+          <p>
+            Wpisz wyniki zakończonych meczów i użyj przycisku, aby przeliczyć
+            punkty wszystkim zawodnikom.
+          </p>
+        </div>
+        <div class="master-grid" id="admin-results"></div>
+        <div class="master-actions">
+          <button class="button button-primary" id="recalculate-button" type="button">
+            Zapisz wyniki i przelicz punktację
+          </button>
+          <button class="button button-ghost-dark" id="reset-demo-button" type="button">
+            Reset danych testowych
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell">
+        <strong>BalticWood ME 2028</strong>
+        <span>Prototyp: logowanie, typy, blokada czasu i panel mastera.</span>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
