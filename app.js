@@ -492,64 +492,54 @@ function renderPublicPredictions(data) {
     return;
   }
 
-  elements.publicPredictions.innerHTML = matches
-    .map((match) => {
-      const result = match.completed ? `${match.resultHome}:${match.resultAway}` : "brak";
-      const visibilityText = match.predictionsVisible
-        ? "typy widoczne"
-        : "typy ukryte do zamknięcia typowania";
-
-      return `
-        <article class="public-match">
-          <header class="public-match-header">
-            <div>
-              <span class="match-number">Mecz ${match.number}</span>
-              <h3>${escapeHtml(match.home)} - ${escapeHtml(match.away)}</h3>
-              <p class="match-meta">Start: ${formatDateTime(match.kickoff)} · Wynik: <strong>${result}</strong></p>
-            </div>
-            <span class="status-pill ${match.predictionsVisible ? "done" : "locked"}">${visibilityText}</span>
-          </header>
-          <div class="public-match-body">
-            ${
-              match.predictionsVisible
-                ? renderPublicPredictionsTable(players, match.predictions ?? {})
-                : `<p class="public-hidden">Typy dla tego meczu pojawią się 10 minut przed startem spotkania.</p>`
-            }
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
-function renderPublicPredictionsTable(players, predictions) {
-  return `
-    <div class="public-table-wrap">
+  elements.publicPredictions.innerHTML = `
+    <div class="public-table-wrap public-wide-table">
       <table>
         <thead>
           <tr>
-            <th>Zawodnik</th>
-            <th>Typ</th>
-            <th>Zapisano</th>
+            <th class="sticky-player">Zawodnik</th>
+            ${matches.map(renderPublicMatchHeader).join("")}
           </tr>
         </thead>
         <tbody>
-          ${players
-            .map((player) => {
-              const prediction = predictions[player.id];
-              const score = prediction ? `${prediction.home}:${prediction.away}` : "-";
-              return `
-                <tr>
-                  <td>${escapeHtml(player.name)}</td>
-                  <td><span class="prediction-score ${prediction ? "" : "empty"}">${score}</span></td>
-                  <td>${prediction ? formatDateTime(prediction.savedAt) : "brak typu"}</td>
-                </tr>
-              `;
-            })
-            .join("")}
+          ${players.map((player) => renderPublicPlayerRow(player, matches)).join("")}
         </tbody>
       </table>
     </div>
+  `;
+}
+
+function renderPublicMatchHeader(match) {
+  const result = match.completed ? `${match.resultHome}:${match.resultAway}` : "brak wyniku";
+  const status = match.locked ? "edycja zamknięta" : "można zmieniać";
+
+  return `
+    <th>
+      <span class="match-number">Mecz ${match.number}</span>
+      <strong>${escapeHtml(match.home)} - ${escapeHtml(match.away)}</strong>
+      <small>${formatDateTime(match.kickoff)}</small>
+      <em>${status} · ${result}</em>
+    </th>
+  `;
+}
+
+function renderPublicPlayerRow(player, matches) {
+  return `
+    <tr>
+      <td class="sticky-player player-name-cell">${escapeHtml(player.name)}</td>
+      ${matches
+        .map((match) => {
+          const prediction = match.predictions?.[player.id];
+          const score = prediction ? `${prediction.home}:${prediction.away}` : "-";
+          return `
+            <td>
+              <span class="prediction-score ${prediction ? "" : "empty"}">${score}</span>
+              <small>${prediction ? formatDateTime(prediction.savedAt) : "brak typu"}</small>
+            </td>
+          `;
+        })
+        .join("")}
+    </tr>
   `;
 }
 
