@@ -43,7 +43,7 @@ PIN-y są haszowane w bazie przez `pgcrypto`, więc nie są zapisane w plikach s
 - Typowanie wyników meczów.
 - Serwerowa blokada zapisu typu, gdy do meczu zostało mniej niż 10 minut.
 - Publiczny podgląd typów wszystkich zawodników bez logowania.
-- Ukrywanie typów meczu do momentu zamknięcia typowania.
+- Widoczność zapisanych typów od razu dla wszystkich meczów.
 - Panel mastera dla Macieja Zająca.
 - Wpisywanie wyników meczów przez mastera.
 - Przeliczanie rankingu po stronie bazy.

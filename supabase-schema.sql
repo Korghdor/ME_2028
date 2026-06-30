@@ -224,28 +224,25 @@ as $$
           'resultAway', m.result_away,
           'completed', m.completed,
           'locked', now() >= m.kickoff_at - interval '10 minutes',
-          'predictionsVisible', m.completed or now() >= m.kickoff_at - interval '10 minutes',
-          'predictions', case
-            when m.completed or now() >= m.kickoff_at - interval '10 minutes' then (
-              select coalesce(
-                jsonb_object_agg(
-                  p.id,
-                  jsonb_build_object(
-                    'home', pr.home_goals,
-                    'away', pr.away_goals,
-                    'savedAt', pr.saved_at
-                  )
-                  order by p.name
-                ),
-                '{}'::jsonb
-              )
-              from public.me2028_predictions pr
-              join public.me2028_players p on p.id = pr.player_id
-              where p.active = true
-                and pr.match_id = m.id
+          'predictionsVisible', true,
+          'predictions', (
+            select coalesce(
+              jsonb_object_agg(
+                p.id,
+                jsonb_build_object(
+                  'home', pr.home_goals,
+                  'away', pr.away_goals,
+                  'savedAt', pr.saved_at
+                )
+                order by p.name
+              ),
+              '{}'::jsonb
             )
-            else '{}'::jsonb
-          end
+            from public.me2028_predictions pr
+            join public.me2028_players p on p.id = pr.player_id
+            where p.active = true
+              and pr.match_id = m.id
+          )
         ) as match_row
         from public.me2028_matches m
       ) rows
