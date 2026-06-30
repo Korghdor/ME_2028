@@ -186,6 +186,73 @@ as $$
   from ranked;
 $$;
 
+create or replace function public.me2028_public_predictions()
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'generatedAt', now(),
+    'players', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', id,
+            'name', name
+          )
+          order by name
+        ),
+        '[]'::jsonb
+      )
+      from public.me2028_players
+      where active = true
+    ),
+    'matches', (
+      select coalesce(
+        jsonb_agg(match_row order by (match_row->>'number')::integer),
+        '[]'::jsonb
+      )
+      from (
+        select jsonb_build_object(
+          'id', m.id,
+          'number', m.number,
+          'home', m.home_team,
+          'away', m.away_team,
+          'kickoff', m.kickoff_at,
+          'resultHome', m.result_home,
+          'resultAway', m.result_away,
+          'completed', m.completed,
+          'locked', now() >= m.kickoff_at - interval '10 minutes',
+          'predictionsVisible', m.completed or now() >= m.kickoff_at - interval '10 minutes',
+          'predictions', case
+            when m.completed or now() >= m.kickoff_at - interval '10 minutes' then (
+              select coalesce(
+                jsonb_object_agg(
+                  p.id,
+                  jsonb_build_object(
+                    'home', pr.home_goals,
+                    'away', pr.away_goals,
+                    'savedAt', pr.saved_at
+                  )
+                  order by p.name
+                ),
+                '{}'::jsonb
+              )
+              from public.me2028_predictions pr
+              join public.me2028_players p on p.id = pr.player_id
+              where p.active = true
+                and pr.match_id = m.id
+            )
+            else '{}'::jsonb
+          end
+        ) as match_row
+        from public.me2028_matches m
+      ) rows
+    )
+  );
+$$;
+
 create or replace function public.me2028_bootstrap_json(p_player public.me2028_players)
 returns jsonb
 language sql
@@ -429,6 +496,7 @@ revoke execute on function public.me2028_session_player(uuid) from public;
 revoke execute on function public.me2028_ranking_json() from public;
 revoke execute on function public.me2028_bootstrap_json(public.me2028_players) from public;
 
+grant execute on function public.me2028_public_predictions() to anon, authenticated;
 grant execute on function public.me2028_login(text, text) to anon, authenticated;
 grant execute on function public.me2028_get_bootstrap(uuid) to anon, authenticated;
 grant execute on function public.me2028_save_prediction(uuid, uuid, integer, integer) to anon, authenticated;

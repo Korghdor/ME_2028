@@ -21,6 +21,7 @@
           </span>
         </a>
         <div class="nav-links">
+          <a class="nav-link" href="#public-typy">Typy wszystkich</a>
           <a class="nav-link" href="#typy">Typy</a>
           <a class="nav-link" href="#ranking">Ranking</a>
           <a class="nav-link nav-link-master" href="#master">Master</a>
@@ -82,6 +83,28 @@
         </section>
       </div>
     </header>
+
+    <main class="shell public-shell">
+      <section class="section" id="public-typy">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Publiczny podgląd</p>
+            <h2>Typy wszystkich zawodników</h2>
+          </div>
+          <p>
+            Widok dostępny bez logowania. Typy są ujawniane dopiero po zamknięciu
+            typowania danego meczu, czyli 10 minut przed startem.
+          </p>
+        </div>
+        <div class="public-actions">
+          <button class="button button-ghost-dark" id="refresh-public-predictions" type="button">
+            Odśwież typy
+          </button>
+          <span id="public-predictions-status">Ładowanie typów...</span>
+        </div>
+        <div class="public-predictions" id="public-predictions"></div>
+      </section>
+    </main>
 
     <main class="shell app-shell" id="app" hidden>
       <section class="user-bar">

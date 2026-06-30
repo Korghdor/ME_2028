@@ -36,6 +36,9 @@ const elements = {
   adminResults: $("#admin-results"),
   recalculateButton: $("#recalculate-button"),
   resetDemoButton: $("#reset-demo-button"),
+  publicPredictions: $("#public-predictions"),
+  publicPredictionsStatus: $("#public-predictions-status"),
+  refreshPublicPredictions: $("#refresh-public-predictions"),
 };
 
 init();
@@ -48,8 +51,11 @@ async function init() {
     showLoginOnly(
       "Brakuje konfiguracji Supabase. Wklej anon public key w pliku supabase-config.js.",
     );
+    elements.publicPredictionsStatus.textContent = "Brakuje konfiguracji Supabase.";
     return;
   }
+
+  await loadPublicPredictions();
 
   if (state.sessionToken) {
     await loadBootstrap();
@@ -89,6 +95,7 @@ function bindEvents() {
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.recalculateButton.addEventListener("click", handleRecalculate);
   elements.resetDemoButton.addEventListener("click", handleResetDemo);
+  elements.refreshPublicPredictions.addEventListener("click", loadPublicPredictions);
 }
 
 function renderLoginOptions() {
@@ -135,6 +142,7 @@ async function loadBootstrap() {
 
   applyBootstrap(data);
   render();
+  await loadPublicPredictions();
 }
 
 function handleLogout() {
@@ -207,6 +215,7 @@ async function handleRecalculate() {
     if (latestData) {
       applyBootstrap(latestData);
       render();
+      await loadPublicPredictions();
     }
   } finally {
     elements.recalculateButton.disabled = false;
@@ -254,6 +263,27 @@ async function handleSavePrediction(matchId) {
 
   const nextStatusElement = document.querySelector(`[data-save-status="${matchId}"]`);
   setSaveStatus(nextStatusElement, "Typ zapisany w bazie. Piłkarska intuicja poszła w świat.", "success");
+  await loadPublicPredictions();
+}
+
+async function loadPublicPredictions() {
+  if (!state.supabase) return;
+
+  elements.refreshPublicPredictions.disabled = true;
+  elements.publicPredictionsStatus.textContent = "Ładowanie typów...";
+
+  const { data, error } = await state.supabase.rpc("me2028_public_predictions");
+
+  elements.refreshPublicPredictions.disabled = false;
+
+  if (error) {
+    elements.publicPredictionsStatus.textContent = cleanError(error.message);
+    elements.publicPredictions.innerHTML = "";
+    return;
+  }
+
+  renderPublicPredictions(data);
+  elements.publicPredictionsStatus.textContent = `Ostatnie odświeżenie: ${formatDateTime(data.generatedAt)}`;
 }
 
 function applyBootstrap(payload) {
@@ -451,6 +481,76 @@ function renderAdmin() {
       `,
     )
     .join("");
+}
+
+function renderPublicPredictions(data) {
+  const players = data.players ?? [];
+  const matches = data.matches ?? [];
+
+  if (matches.length === 0) {
+    elements.publicPredictions.innerHTML = `<p class="public-hidden">Brak meczów do pokazania.</p>`;
+    return;
+  }
+
+  elements.publicPredictions.innerHTML = matches
+    .map((match) => {
+      const result = match.completed ? `${match.resultHome}:${match.resultAway}` : "brak";
+      const visibilityText = match.predictionsVisible
+        ? "typy widoczne"
+        : "typy ukryte do zamknięcia typowania";
+
+      return `
+        <article class="public-match">
+          <header class="public-match-header">
+            <div>
+              <span class="match-number">Mecz ${match.number}</span>
+              <h3>${escapeHtml(match.home)} - ${escapeHtml(match.away)}</h3>
+              <p class="match-meta">Start: ${formatDateTime(match.kickoff)} · Wynik: <strong>${result}</strong></p>
+            </div>
+            <span class="status-pill ${match.predictionsVisible ? "done" : "locked"}">${visibilityText}</span>
+          </header>
+          <div class="public-match-body">
+            ${
+              match.predictionsVisible
+                ? renderPublicPredictionsTable(players, match.predictions ?? {})
+                : `<p class="public-hidden">Typy dla tego meczu pojawią się 10 minut przed startem spotkania.</p>`
+            }
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderPublicPredictionsTable(players, predictions) {
+  return `
+    <div class="public-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Zawodnik</th>
+            <th>Typ</th>
+            <th>Zapisano</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${players
+            .map((player) => {
+              const prediction = predictions[player.id];
+              const score = prediction ? `${prediction.home}:${prediction.away}` : "-";
+              return `
+                <tr>
+                  <td>${escapeHtml(player.name)}</td>
+                  <td><span class="prediction-score ${prediction ? "" : "empty"}">${score}</span></td>
+                  <td>${prediction ? formatDateTime(prediction.savedAt) : "brak typu"}</td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function setSaveStatus(element, message, type) {
